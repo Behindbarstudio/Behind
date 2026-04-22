@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Behind Bars Studio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0a0a0a;
+      --white: #f0ede8;
+      --grey: #666;
+      --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    html, body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font);
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 28px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .nav-links a:hover { opacity: 1; }
+    .menu-btn {
+      background: none; border: none; cursor: crosshair;
+      padding: 4px; display: flex; flex-direction: column;
+      gap: 5px; z-index: 110; position: relative;
+    }
+    .menu-btn span {
+      display: block; width: 22px; height: 1px;
+      background: var(--white);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+    }
+    body.menu-open .menu-btn span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    body.menu-open .menu-btn span:nth-child(2) { opacity: 0; }
+    body.menu-open .menu-btn span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+    .overlay {
+      position: fixed; inset: 0; background: var(--black);
+      z-index: 90; display: flex; flex-direction: column;
+      justify-content: center; padding: 100px 60px 60px;
+      opacity: 0; pointer-events: none; transition: opacity 0.45s ease;
+    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+    .overlay-links a {
+      display: block;
+      font-size: clamp(40px, 7vw, 80px);
+      font-weight: 300; letter-spacing: -0.03em;
+      color: var(--white); text-decoration: none;
+      line-height: 1.1; opacity: 0; transform: translateY(24px);
+      transition: opacity 0.45s, transform 0.45s, color 0.2s;
+    }
+    .overlay.active .overlay-links a { opacity: 1; transform: translateY(0); }
+    .overlay.active .overlay-links a:nth-child(1) { transition-delay: 0.08s; }
+    .overlay.active .overlay-links a:nth-child(2) { transition-delay: 0.16s; }
+    .overlay.active .overlay-links a:nth-child(3) { transition-delay: 0.24s; }
+    .overlay-links a:hover { color: var(--grey); }
+    .overlay-foot {
+      position: absolute; bottom: 36px; left: 60px; right: 60px;
+      display: flex; justify-content: space-between;
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--grey); opacity: 0; transition: opacity 0.45s 0.4s;
+    }
+    .overlay.active .overlay-foot { opacity: 1; }
+    .overlay-foot a { color: var(--grey); text-decoration: none; }
+    .overlay-foot a:hover { color: var(--white); }
+    #about {
+      display: none; position: fixed; inset: 0;
+      background: var(--black); z-index: 85;
+      padding: 120px 60px 60px; overflow-y: auto;
+    }
+    #about.active { display: flex; flex-direction: column; justify-content: center; }
+    .about-content { max-width: 680px; }
+    .about-content h2 {
+      font-size: clamp(28px, 4vw, 48px); font-weight: 300;
+      letter-spacing: -0.02em; margin-bottom: 32px; line-height: 1.1;
+    }
+    .about-content p { font-size: 15px; line-height: 1.75; color: #aaa; margin-bottom: 20px; }
+    .services { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 600px) { .services { grid-template-columns: 1fr; } }
+    .service { border-top: 1px solid #222; padding-top: 16px; }
+    .service h3 {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--white); margin-bottom: 8px; font-weight: 400;
+    }
+    .service p { font-size: 13px; color: #666; line-height: 1.6; margin: 0; }
+    main { padding: 86px 8px 8px; }
+    .grid { columns: 3; column-gap: 5px; }
+    @media (max-width: 900px) { .grid { columns: 2; } }
+    @media (max-width: 560px) { .grid { columns: 1; } }
+    .grid-item {
+      break-inside: avoid; margin-bottom: 5px;
+      position: relative; overflow: hidden; cursor: pointer;
+      opacity: 0; transform: translateY(14px);
+      animation: fadeUp 0.55s forwards;
+    }
+    .grid-item:nth-child(1)  { animation-delay: 0.04s; }
+    .grid-item:nth-child(2)  { animation-delay: 0.09s; }
+    .grid-item:nth-child(3)  { animation-delay: 0.14s; }
+    .grid-item:nth-child(4)  { animation-delay: 0.19s; }
+    .grid-item:nth-child(5)  { animation-delay: 0.24s; }
+    .grid-item:nth-child(6)  { animation-delay: 0.29s; }
+    .grid-item:nth-child(7)  { animation-delay: 0.34s; }
+    .grid-item:nth-child(8)  { animation-delay: 0.39s; }
+    .grid-item:nth-child(9)  { animation-delay: 0.44s; }
+    .grid-item:nth-child(10) { animation-delay: 0.49s; }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    .grid-item video {
+      width: 100%; display: block; object-fit: cover;
+      transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .grid-item:hover video { transform: scale(1.04); }
+    .item-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 50px 14px 14px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--white); opacity: 0; transform: translateY(5px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .grid-item:hover .item-label { opacity: 1; transform: translateY(0); }
+    footer {
+      padding: 32px 28px; display: flex; justify-content: space-between;
+      align-items: center; border-top: 1px solid #1c1c1c;
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey);
+    }
+    footer a { color: var(--grey); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--white); }
+  </style>
+</head>
+<body>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-links">
+      <a href="#work" onclick="closeMenu()">Work</a>
+      <a href="#" onclick="closeMenu(); showAbout(); return false;">About</a>
+      <a href="mailto:hello@behindbars.studio" onclick="closeMenu()">Contact</a>
+    </div>
+    <div class="overlay-foot">
+      <span>Behind Bars Studio</span>
+      <a href="mailto:hello@behindbars.studio">hello@behindbars.studio</a>
+    </div>
+  </div>
+
+  <div id="about">
+    <div class="about-content">
+      <h2>Sonic branding for the bold.</h2>
+      <p>Behind Bars is a specialist studio in powerful and memorable sonic branding solutions. We understand the critical role that sound plays in shaping perceptions and creating lasting impressions — whether you're launching a product, developing an app, or producing a multimedia campaign.</p>
+      <div class="services">
+        <div class="service"><h3>Sound Design</h3><p>Immersive auditory experiences that captivate your audience and enhance the overall user experience.</p></div>
+        <div class="service"><h3>Music Composition</h3><p>Bespoke compositions tailored to reflect your brand identity and resonate with your target audience.</p></div>
+        <div class="service"><h3>Sonic Logos</h3><p>A custom-designed sonic logo that encapsulates your brand identity in seconds.</p></div>
+        <div class="service"><h3>Sonic Branding</h3><p>Comprehensive strategies that align with your values and strengthen brand recognition across all touchpoints.</p></div>
+        <div class="service"><h3>Game Audio</h3><p>Immersive soundscapes and adaptive audio systems designed to enhance gameplay and deepen engagement.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="/" class="nav-logo" aria-label="Behind Bars Studio">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122 130" width="26" height="28">
+        <rect x="0"  y="0"   width="90" height="28" fill="white"/>
+        <rect x="90" y="28"  width="32" height="24" fill="white"/>
+        <rect x="0"  y="52"  width="90" height="28" fill="white"/>
+        <rect x="90" y="80"  width="32" height="24" fill="white"/>
+        <rect x="0"  y="104" width="90" height="26" fill="white"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 56" height="20">
+        <text x="0" y="44" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+          font-weight="300" font-size="50" fill="white" letter-spacing="-0.5">Behind Bars</text>
+      </svg>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#" onclick="showAbout(); return false;">About</a></li>
+      <li><a href="#work" onclick="hideAbout()">Work</a></li>
+    </ul>
+  </nav>
+
+  <main id="work">
+    <div class="grid">
+      <div class="grid-item">
+        <video src="videos/Amazon.mp4" autoplay loop muted playsinline style="aspect-ratio:1/1;"></video>
+        <div class="item-label">Amazon</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/AS_Apple_Autism_Awarness_BB.mp4" autoplay loop muted playsinline style="aspect-ratio:16/9;"></video>
+        <div class="item-label">Apple — Autism Awareness</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/Arcade_Asics_03.mp4" autoplay loop muted playsinline style="aspect-ratio:16/9;"></video>
+        <div class="item-label">Asics</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/Stella_Timeline_V2.mp4" autoplay loop muted playsinline style="aspect-ratio:1/1;"></video>
+        <div class="item-label">Stella Artois</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/BB_Cecil_Nurse_V2_2_Concept_D.mp4" autoplay loop muted playsinline style="aspect-ratio:16/9;"></video>
+        <div class="item-label">Cecil — Nurse</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/Kramer.mp4" autoplay loop muted playsinline style="aspect-ratio:4/5;"></video>
+        <div class="item-label">Kramer</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/PIC_REEL_BB.mp4" autoplay loop muted playsinline style="aspect-ratio:16/9;"></video>
+        <div class="item-label">PIC Reel</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/PIC_Teaser.mp4" autoplay loop muted playsinline style="aspect-ratio:1/1;"></video>
+        <div class="item-label">PIC Teaser</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/Robotic_Arm_02.mp4" autoplay loop muted playsinline style="aspect-ratio:16/9;"></video>
+        <div class="item-label">Robotic Arm</div>
+      </div>
+      <div class="grid-item">
+        <video src="videos/Scar.mp4" autoplay loop muted playsinline style="aspect-ratio:1/1;"></video>
+        <div class="item-label">Scar</div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>© 2025 Behind Bars Studio</span>
+    <a href="mailto:hello@behindbars.studio">hello@behindbars.studio</a>
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      const open = document.body.classList.toggle('menu-open');
+      document.getElementById('overlay').classList.toggle('active', open);
+    }
+    function closeMenu() {
+      document.body.classList.remove('menu-open');
+      document.getElementById('overlay').classList.remove('active');
+    }
+    function showAbout() { document.getElementById('about').classList.add('active'); }
+    function hideAbout() { document.getElementById('about').classList.remove('active'); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); hideAbout(); } });
+  </script>
+</body>
+</html>
